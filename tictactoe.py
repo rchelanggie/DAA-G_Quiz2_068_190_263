@@ -200,3 +200,104 @@ class Game:
             # desc line
             start_desc = (col * SQSIZE + OFFSET, row * SQSIZE + OFFSET)
             end_desc = (col * SQSIZE + SQSIZE - OFFSET, row * SQSIZE + SQSIZE - OFFSET)
+            pygame.draw.line(screen, CROSS_COLOR, start_desc, end_desc, CROSS_WIDTH)
+            # asc line
+            start_asc = (col * SQSIZE + OFFSET, row * SQSIZE + SQSIZE - OFFSET)
+            end_asc = (col * SQSIZE + SQSIZE - OFFSET, row * SQSIZE + OFFSET)
+            pygame.draw.line(screen, CROSS_COLOR, start_asc, end_asc, CROSS_WIDTH)
+        
+        elif self.player == 2:
+            # draw circle
+            center = (col * SQSIZE + SQSIZE // 2, row * SQSIZE + SQSIZE // 2)
+            pygame.draw.circle(screen, CIRC_COLOR, center, RADIUS, CIRC_WIDTH)
+
+    # --- OTHER METHODS ---
+
+    def make_move(self, row, col):
+        self.board.mark_sqr(row, col, self.player)
+        self.draw_fig(row, col)
+        self.next_turn()
+
+    def next_turn(self):
+        self.player = self.player % 2 + 1
+
+    def change_gamemode(self):
+        self.gamemode = 'ai' if self.gamemode == 'pvp' else 'pvp'
+
+    def isover(self):
+        return self.board.final_state(show=True) != 0 or self.board.isfull()
+
+    def reset(self):
+        self.__init__()
+
+def main():
+
+    # --- OBJECTS ---
+
+    game = Game()
+    board = game.board
+    ai = game.ai
+
+    # --- MAINLOOP ---
+
+    while True:
+        
+        # pygame events
+        for event in pygame.event.get():
+
+            # quit event
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            # keydown event
+            if event.type == pygame.KEYDOWN:
+
+                # g-gamemode
+                if event.key == pygame.K_g:
+                    game.change_gamemode()
+
+                # r-restart
+                if event.key == pygame.K_r:
+                    game.reset()
+                    board = game.board
+                    ai = game.ai
+
+                # 0-random ai
+                if event.key == pygame.K_0:
+                    ai.level = 0
+                
+                # 1-random ai
+                if event.key == pygame.K_1:
+                    ai.level = 1
+
+            # click event
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = event.pos
+                row = pos[1] // SQSIZE
+                col = pos[0] // SQSIZE
+                
+                # human mark sqr
+                if board.empty_sqr(row, col) and game.running:
+                    game.make_move(row, col)
+
+                    if game.isover():
+                        game.running = False
+
+
+        # AI initial call
+        if game.gamemode == 'ai' and game.player == ai.player and game.running:
+
+            # update the screen
+            pygame.display.update()
+
+            # eval
+            row, col = ai.eval(board)
+            game.make_move(row, col)
+
+            if game.isover():
+                game.running = False
+            
+        pygame.display.update()
+
+main()
